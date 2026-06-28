@@ -1,0 +1,30 @@
+{
+  "name": "layoutit-terra",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "core-js": "^3.19.3",
+    "dom-to-image": "^2.6.0",
+    "jszip": "^3.10.1",
+    "fast-simplex-noise": "^4.0.0",
+    "module-alias": "^2.2.2",
+    "nuxt": "^2.15.8",
+    "pako": "^2.1.0",
+    "prismjs": "^1.29.0",
+    "sass-loader": "10.4.1",
+    "vue": "2.6.14",
+    "vue-server-renderer": "2.6.14",
+    "vue-template-compiler": "2.6.14",
+    "webpack": "^4.46.0"
+  },
+  "devDependencies": {
+    "sass": "^1.32.0"
+  }
+}

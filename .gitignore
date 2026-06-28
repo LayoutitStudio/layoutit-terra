@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Nuxt build output
+.nuxt/
+dist/
+.output/
+
+# Logs and diagnostics
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor and OS metadata
+.DS_Store
+Thumbs.db
+
+# Local caches and temporary output
+.cache/
+.npm/
+.eslintcache
+coverage/
+.nyc_output/
+tmp/
+temp/
+
+# Browser/test artifacts
+.playwright-cli/
+playwright-report/
+test-results/
+screenshots/
