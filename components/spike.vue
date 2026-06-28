@@ -23,9 +23,19 @@
 
 <script>
 import { lightingForShape, defaultTextureForBiome } from "~/utils/lighting";
+import {
+  supportsTerrainCardinals,
+  tileProps,
+  variantTriangleTexture,
+  visibleTileFaces,
+} from "~/utils/tileFaces";
 
 const TRIANGLE_A_FALLBACK = "/grass2_trianglea_spike.png";
 const TRIANGLE_B_FALLBACK = "/grass2_triangleb_spike.png";
+const TRIANGLE_FALLBACKS = {
+  a: TRIANGLE_A_FALLBACK,
+  b: TRIANGLE_B_FALLBACK,
+};
 
 export default {
   props: ["x", "y", "x2", "y2", "z", "color", "texture", "rot"],
@@ -36,19 +46,7 @@ export default {
   },
   methods: {
     triangleTexture(texture, variant) {
-      const source = texture || "";
-      const match = source.match(
-        /(.+?)(?:_triangle[ab](?:_[a-z]+)?)?(\.[^.]+)$/
-      );
-      if (!match) {
-        return variant === "a" ? TRIANGLE_A_FALLBACK : TRIANGLE_B_FALLBACK;
-      }
-      const [, base, ext] = match;
-      const fileName = base.split("/").pop() || "";
-      if (!/grass\d+/i.test(fileName)) {
-        return source || (variant === "a" ? TRIANGLE_A_FALLBACK : TRIANGLE_B_FALLBACK);
-      }
-      return `${base}_triangle${variant}_spike${ext}`;
+      return variantTriangleTexture(texture, variant, "spike", TRIANGLE_FALLBACKS);
     },
     handleEnter() {
       this.isHovered = true;
@@ -76,20 +74,10 @@ export default {
       return this.triangleTexture(base, "a");
     },
     visibleFaces() {
-      const faces = ["fl", "bl"];
-      return faces.filter((face) => {
-        const [dx, dy, dz] = this.$ctx.offsets[face] || [0, 0, 0];
-        const neighborZ = this.z + dz;
-        const neighborKey = `${this.x + dx}/${this.y + dy}/${this.x2 + dx}/${
-          this.y2 + dy
-        }`;
-        const neighbor = this.$ctx.voxels[neighborZ]?.[neighborKey];
-        return !neighbor && !this.$ctx.walls[face];
-      });
+      return visibleTileFaces(this.$ctx, tileProps(this), ["fl", "bl"]);
     },
     terrainModeSupportsCardinals() {
-      const mode = this.$ctx?.terrainMode;
-      return mode === "raise" || mode === "lower" || mode === "equalize";
+      return supportsTerrainCardinals(this.$ctx?.terrainMode);
     },
     shouldShowCardinal() {
       return (

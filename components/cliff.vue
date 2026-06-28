@@ -27,6 +27,11 @@
 
 <script>
 import { lightingForShape, defaultTextureForBiome } from "~/utils/lighting";
+import {
+  isCoveredByUpperVoxel,
+  tileProps,
+  visibleTileFaces,
+} from "~/utils/tileFaces";
 
 const cleanName = (value) => {
   if (!value || typeof value !== "string") return null;
@@ -170,26 +175,15 @@ export default {
       return { nonCliff, cliff };
     },
     visibleFaces() {
-      const faces = ["fl", "fr", "bl", "br"];
-      return faces.filter((face) => {
-        const [dx, dy, dz] = this.$ctx.offsets[face] || [0, 0, 0];
-        const neighborZ = this.z + dz;
-        const neighborKey = `${this.x + dx}/${this.y + dy}/${this.x2 + dx}/${
-          this.y2 + dy
-        }`;
-        const neighborLayer = this.$ctx.voxels[neighborZ];
-        const neighbor = neighborLayer ? neighborLayer[neighborKey] : null;
-
-        return !neighbor;
-      });
+      return visibleTileFaces(
+        this.$ctx,
+        tileProps(this),
+        ["fl", "fr", "bl", "br"],
+        { respectWalls: false }
+      );
     },
     isCovered() {
-      const key = `${this.x}/${this.y}/${this.x2}/${this.y2}`;
-      const aboveLayer = this.$ctx.voxels[this.z + 1];
-      if (!aboveLayer || Object.keys(aboveLayer).length === 0) return false;
-      const aboveVoxel = aboveLayer[key];
-      if (!aboveVoxel) return false;
-      return aboveVoxel.shape && aboveVoxel.shape !== "shoreline";
+      return isCoveredByUpperVoxel(this.$ctx, tileProps(this));
     },
   },
 };

@@ -1,4 +1,11 @@
 import { makeNoise2D } from "fast-simplex-noise";
+import {
+  buildMaskForLevel,
+  classifyTerrainMask,
+  cleanupStackedSlopes,
+  maskHasFilledCell,
+  vectorRotation,
+} from "./terrainMask";
 
 function pseudoRandom(seed) {
   let value = seed % 2147483647;
@@ -86,7 +93,6 @@ export default function generateTerrain(ctx) {
 
   // --- helpers ---
   const inBounds = (x, y) => x >= 1 && x <= rows && y >= 1 && y <= cols;
-  const vectorRotation = (dx, dy) => (Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 90 : 270) : (dy > 0 ? 0 : 180));
 
   const octaveNoise = (offset, { octaves = 1, persistence = 0.5, lacunarity = 2 }) => {
     const randomFn = pseudoRandom((seed + offset) >>> 0);
@@ -440,143 +446,13 @@ export default function generateTerrain(ctx) {
     highestLevel = 0;
   }
 
-  // --- shape classification (shared) ---
+  // --- shape classification ---
   const dirMap = [
     { name: "south", dx: 1, dy: 0, rot: 90 },
     { name: "north", dx: -1, dy: 0, rot: 270 },
     { name: "east", dx: 0, dy: 1, rot: 0 },
     { name: "west", dx: 0, dy: -1, rot: 180 },
   ];
-
-  const diagInfo = {
-    ne: { dx: -1, dy: 1, sides: ["north", "east"], wedgeRot: 270, spikeRot: 0 },
-    se: { dx: 1, dy: 1, sides: ["south", "east"], wedgeRot: 0, spikeRot: 90 },
-    sw: { dx: 1, dy: -1, sides: ["south", "west"], wedgeRot: 90, spikeRot: 180 },
-    nw: { dx: -1, dy: -1, sides: ["north", "west"], wedgeRot: 180, spikeRot: 270 },
-  };
-
-  // Lookup table keyed by NESW water mask (bit order: N=1, E=2, S=4, W=8)
-  const cardinalLookup = {
-    0b0000: { kind: "interior" },
-    0b0001: { kind: "single", rot: 270 },
-    0b0010: { kind: "single", rot: 0 },
-    0b0100: { kind: "single", rot: 90 },
-    0b1000: { kind: "single", rot: 180 },
-    0b0011: { kind: "adjacent", diag: "ne" },
-    0b0110: { kind: "adjacent", diag: "se" },
-    0b1100: { kind: "adjacent", diag: "sw" },
-    0b1001: { kind: "adjacent", diag: "nw" },
-    0b0101: { kind: "opposite", options: ["south", "north"] },
-    0b1010: { kind: "opposite", options: ["east", "west"] },
-    0b0111: { kind: "three" },
-    0b1011: { kind: "three" },
-    0b1101: { kind: "three" },
-    0b1110: { kind: "three" },
-    0b1111: { kind: "all" },
-  };
-
-  // count water exposures and utilities
-  const exposures = (mask, x, y) => {
-    const w = { north: 0, south: 0, east: 0, west: 0 };
-    const get = (nx, ny) => (inBounds(nx, ny) ? mask[nx - 1][ny - 1] : 0);
-    w.north = get(x - 1, y) === 0 ? 1 : 0;
-    w.south = get(x + 1, y) === 0 ? 1 : 0;
-    w.east = get(x, y + 1) === 0 ? 1 : 0;
-    w.west = get(x, y - 1) === 0 ? 1 : 0;
-    return w;
-  };
-  const diagWater = (mask, x, y, dx, dy) => {
-    const nx = x + dx, ny = y + dy;
-    return !inBounds(nx, ny) || mask[nx - 1][ny - 1] === 0;
-  };
-  const classifyMask = (mask) => {
-    const shape = Array.from({ length: rows }, () => Array(cols).fill("flat"));
-    const rot = Array.from({ length: rows }, () => Array(cols).fill(0));
-
-    const preferRotation = { north: 270, east: 0, south: 90, west: 180 };
-    const diagOrder = ["ne", "se", "sw", "nw"];
-
-    for (let x = 1; x <= rows; x++) for (let y = 1; y <= cols; y++) {
-      if (mask[x - 1][y - 1] !== 1) continue;
-
-      const w = exposures(mask, x, y);
-      const cardMask = (w.north << 0) | (w.east << 1) | (w.south << 2) | (w.west << 3);
-      const entry = cardinalLookup[cardMask] || cardinalLookup[0];
-
-      const diagState = {
-        ne: diagWater(mask, x, y, diagInfo.ne.dx, diagInfo.ne.dy),
-        se: diagWater(mask, x, y, diagInfo.se.dx, diagInfo.se.dy),
-        sw: diagWater(mask, x, y, diagInfo.sw.dx, diagInfo.sw.dy),
-        nw: diagWater(mask, x, y, diagInfo.nw.dx, diagInfo.nw.dy),
-      };
-
-      const vdx = (w.south ? 1 : 0) - (w.north ? 1 : 0);
-      const vdy = (w.east ? 1 : 0) - (w.west ? 1 : 0);
-
-      let tileShape = "flat";
-      let tileRot = 0;
-
-      switch (entry.kind) {
-        case "interior": {
-          let wedgePlaced = false;
-          for (const key of diagOrder) {
-            if (!diagState[key]) continue;
-            const diag = diagInfo[key];
-            const [sideA, sideB] = diag.sides;
-            if (w[sideA] || w[sideB]) continue;
-            tileShape = "wedge";
-            tileRot = diag.wedgeRot;
-            wedgePlaced = true;
-            break;
-          }
-          if (!wedgePlaced) {
-            tileShape = "flat";
-            tileRot = 0;
-          }
-          break;
-        }
-        case "single":
-          tileShape = "ramp";
-          tileRot = entry.rot;
-          break;
-        case "adjacent": {
-          const diag = diagInfo[entry.diag];
-          if (diagState[entry.diag]) {
-            tileShape = "spike";
-            tileRot = diag.spikeRot;
-          } else {
-            tileShape = "ramp";
-            tileRot = vectorRotation(vdx, vdy);
-          }
-          break;
-        }
-        case "opposite": {
-          const options = entry.options || [];
-          const dirName = options.find((name) => w[name]) || options[0] || "south";
-          tileShape = "ramp";
-          tileRot = preferRotation[dirName] ?? 90;
-          break;
-        }
-        case "three":
-          tileShape = "spike";
-          tileRot = (vdx === 0 && vdy === 0) ? 0 : vectorRotation(vdx, vdy);
-          break;
-        case "all":
-          tileShape = "spike";
-          tileRot = 0;
-          break;
-        default:
-          tileShape = "flat";
-          tileRot = 0;
-          break;
-      }
-
-      shape[x - 1][y - 1] = tileShape;
-      rot[x - 1][y - 1] = tileRot;
-    }
-
-    return { shape, rot };
-  };
 
   const writeLayer = (layerIndex, mask, shape, rot) => {
     for (let x = 1; x <= rows; x++) for (let y = 1; y <= cols; y++) {
@@ -592,16 +468,16 @@ export default function generateTerrain(ctx) {
   };
 
   // --- level 0 ---
-  const baseShapes = classifyMask(mask0);
+  const baseShapes = classifyTerrainMask(mask0);
   writeLayer(0, mask0, baseShapes.shape, baseShapes.rot);
 
   const maxUsableLevel = Math.min(totalLevels - 1, highestLevel);
   for (let level = 1; level <= maxUsableLevel; level++) {
-    let levelMask = heightLevels.map((row) => row.map((value) => (value >= level ? 1 : 0)));
-    if (!levelMask.some((r) => r.includes(1))) continue;
+    let levelMask = buildMaskForLevel(heightLevels, level);
+    if (!maskHasFilledCell(levelMask)) continue;
     levelMask = prune(levelMask);
-    if (!levelMask.some((r) => r.includes(1))) continue;
-    const shapes = classifyMask(levelMask);
+    if (!maskHasFilledCell(levelMask)) continue;
+    const shapes = classifyTerrainMask(levelMask);
     writeLayer(level, levelMask, shapes.shape, shapes.rot);
   }
 
@@ -653,58 +529,7 @@ export default function generateTerrain(ctx) {
 
   addShorelineWithCorners(mask0);
 
-  const cleanupStackedSlopes = () => {
-    const slopeShapes = new Set(["ramp", "wedge", "spike"]);
-    const disallowedSupports = new Set(["ramp", "wedge", "spike", "cliff"]);
-
-    for (let layer = 1; layer < newVoxels.length; layer++) {
-      const current = newVoxels[layer];
-      const below = newVoxels[layer - 1];
-      if (!current || !below) continue;
-      for (const key of Object.keys(current)) {
-        const voxel = current[key];
-        if (!voxel || !slopeShapes.has(voxel.shape)) continue;
-
-        const support = below[key];
-        if (!support) continue;
-
-        const supportShape = support.shape || null;
-        if (!supportShape || supportShape === "flat") continue;
-        if (!disallowedSupports.has(supportShape)) continue;
-
-        const parts = key.split("/");
-        const x = Number(parts[0]);
-        const y = Number(parts[1]);
-        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-        if (cliffEdgeBuffer > 0) {
-          if (
-            x <= cliffEdgeBuffer ||
-            y <= cliffEdgeBuffer ||
-            x > rows - cliffEdgeBuffer ||
-            y > cols - cliffEdgeBuffer
-          ) {
-            continue;
-          }
-        }
-
-        const replacedShape = voxel.shape || null;
-        const supportVariant = support.cliffVariant ?? supportShape ?? replacedShape;
-        const supportBaseShape = support.cliffBaseShape ?? (supportShape === "cliff" ? supportVariant : supportShape);
-
-        current[key] = {
-          ...voxel,
-          shape: "cliff",
-          rot: Number.isFinite(support.rot) ? support.rot : (voxel.rot ?? 0),
-          color: support.color ?? voxel.color,
-          cliffVariant: supportVariant || replacedShape,
-          cliffBaseShape: supportBaseShape || null,
-          cliffReplacedShape: replacedShape,
-        };
-      }
-    }
-  };
-
-  cleanupStackedSlopes();
+  cleanupStackedSlopes(newVoxels, rows, cols, { edgeBuffer: cliffEdgeBuffer });
 
   // commit
   ctx.voxels = newVoxels;

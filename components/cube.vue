@@ -25,6 +25,8 @@
 </template>
 
 <script>
+import { tileProps, visibleTileFaces } from "~/utils/tileFaces";
+
 export default {
   props: ["x", "y", "x2", "y2", "z", "color", "texture"],
   computed: {
@@ -59,24 +61,12 @@ export default {
     },
 
     visibleFaces() {
-      return ["t", "b", "bl", "br", "fr", "fl"].filter((face) => {
-        const [dx, dy, dz] = this.$ctx.offsets[face];
-
-        const neighborZ = this.z + dz;
-        const neighborKey = `${this.x + dx}/${this.y + dy}/${this.x2 + dx}/${
-          this.y2 + dy
-        }`;
-        const neighborVoxel = this.$ctx.voxels[neighborZ]?.[neighborKey];
-
-        return (
-          // Ensure the layer exists and check if the neighbor voxel is absent or not a cube
-          (!neighborVoxel || neighborVoxel.shape !== "cube") &&
-          // Bottom face hidden at floor level
-          !(face === "b" && this.z === 0) &&
-          // Not hidden by rotation
-          !this.$ctx.walls[face]
-        );
-      });
+      return visibleTileFaces(
+        this.$ctx,
+        tileProps(this),
+        ["t", "b", "bl", "br", "fr", "fl"],
+        { sameShape: "cube", hideBottomAtFloor: true }
+      );
     },
   },
   methods: {
@@ -243,4 +233,4 @@ export default {
     cursor: pointer;
   }
 }
-</style> 
+</style>

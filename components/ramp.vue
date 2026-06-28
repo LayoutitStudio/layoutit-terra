@@ -23,6 +23,11 @@
 
 <script>
 import { lightingForShape, defaultTextureForBiome } from "~/utils/lighting";
+import {
+  supportsTerrainCardinals,
+  tileProps,
+  visibleTileFaces,
+} from "~/utils/tileFaces";
 
 export default {
   props: ["x", "y", "x2", "y2", "z", "color", "texture", "rot"],
@@ -43,20 +48,10 @@ export default {
       );
     },
     visibleFaces() {
-      const faces = ["fl", "bl", "br"];
-      return faces.filter((face) => {
-        const [dx, dy, dz] = this.$ctx.offsets[face] || [0, 0, 0];
-        const neighborZ = this.z + dz;
-        const neighborKey = `${this.x + dx}/${this.y + dy}/${this.x2 + dx}/${
-          this.y2 + dy
-        }`;
-        const neighbor = this.$ctx.voxels[neighborZ]?.[neighborKey];
-        return !neighbor && !this.$ctx.walls[face];
-      });
+      return visibleTileFaces(this.$ctx, tileProps(this), ["fl", "bl", "br"]);
     },
     terrainModeSupportsCardinals() {
-      const mode = this.$ctx?.terrainMode;
-      return mode === "raise" || mode === "lower" || mode === "equalize";
+      return supportsTerrainCardinals(this.$ctx?.terrainMode);
     },
     shouldShowCardinal() {
       return (
