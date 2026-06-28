@@ -4,7 +4,7 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: "Layoutit Atlas - CSS Terrain Generator",
+    title: "Layoutit Terra - CSS Terrain Generator",
     htmlAttrs: {
       lang: "en",
     },
