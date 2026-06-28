@@ -410,7 +410,7 @@ export default {
       for (let x = 1; x <= rows; x++) {
         for (let y = 1; y <= cols; y++) {
           const height = heights?.[x - 1]?.[y - 1];
-      if (!Number.isFinite(height) || height < 0) continue;
+          if (!Number.isFinite(height) || height < 0) continue;
           const layer = voxels[height];
           if (!layer) continue;
           const key = `${x}/${y}/${x + 1}/${y + 1}`;
@@ -433,17 +433,7 @@ export default {
         }
       }
 
-      if (typeof window !== "undefined") {
-        console.info(
-          "decorateTerrainWithTrees:",
-          `found ${candidates.length} flat candidates across ${rows}x${cols}`,
-        );
-      }
-
       if (!candidates.length) {
-        if (typeof window !== "undefined") {
-          console.info("decorateTerrainWithTrees: no flat voxels available");
-        }
         return;
       }
 
@@ -461,20 +451,6 @@ export default {
         this.$set(candidate.voxel, "treeClass", treeClasses[treeIndex]);
       }
 
-      if (typeof window !== "undefined") {
-        const seenClasses = new Set(
-          candidates
-            .slice(0, targetCount)
-            .map((candidate) => candidate.voxel.treeClass)
-            .filter(Boolean),
-        );
-        console.info(
-          "decorateTerrainWithTrees:",
-          `placed ${targetCount} / ${candidates.length} candidates`,
-          "classes:",
-          Array.from(seenClasses).join(", ") || "none",
-        );
-      }
     },
     handleCellMouseDown(cellIndex, event) {
       if (event && event.button !== undefined && event.button !== 0) return;

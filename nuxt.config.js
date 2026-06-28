@@ -26,20 +26,6 @@ export default {
         href: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&display=auto",
       },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-      {
-        rel: "stylesheet",
-        href: "https://api.mapbox.com/mapbox-gl-js/v1.10.0/mapbox-gl.css",
-      },
-      {
-        rel: 'stylesheet',
-        href: 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css',
-      },
-    ],
-    script: [
-      {
-        src: 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js',
-        defer: true,
-      },
     ],
   },
   css: ['prismjs/themes/prism.css'],

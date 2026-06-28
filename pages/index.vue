@@ -457,8 +457,6 @@ export default {
 }
 
 .floor {
-  background-image: url("https://i.imgur.com/bk7pLjK.png");
-  background-size: 50px;
   display: flex;
   top: 0;
   left: 0;

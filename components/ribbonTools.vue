@@ -553,19 +553,30 @@ body {
     },
     async saveToGallery() {
       const hash = window.location.hash.slice(1);
-      console.log(hash);
-      if (hash) {
-        this.$ctx.saving = true;
+      if (!hash) return;
+
+      if (!this.$supabase) {
+        if (this.$ctx.showNotification) {
+          this.$ctx.showNotification("Gallery saving is not configured.", "error");
+        }
+        return;
+      }
+
+      this.$ctx.saving = true;
+      try {
         const { error } = await this.$supabase
           .from("gallery")
           .insert([{ url: hash }]);
-        this.$ctx.saving = false;
         if (error) {
           console.error("Failed to save to gallery:", error.message);
         } else {
           this.$ctx.saved = true;
           setTimeout(() => (this.$ctx.saved = false), 4000);
         }
+      } catch (error) {
+        console.error("Failed to save to gallery:", error);
+      } finally {
+        this.$ctx.saving = false;
       }
     },
     openCodepen() {
@@ -615,7 +626,6 @@ body {
         });
     },
     undo() {
-      console.log(this.$ctx.history);
       if (this.$ctx.history.length !== 0) {
         // Save the current state to the redo stack
         this.$ctx.redoStack.push(JSON.parse(JSON.stringify(this.$ctx.voxels)));
@@ -723,8 +733,6 @@ body {
           } catch (error) {
             console.error("Error handling VOX file:", error);
           }
-        } else {
-          console.log("No file selected.");
         }
       });
       input.click();
@@ -767,7 +775,6 @@ body {
             const childChunkSize = this.readInt(); // Size of child chunks
 
             if (chunkId === "RGBA") {
-              console.log("Parsing RGBA Chunk...");
               for (let i = 0; i < 256; i++) {
                 const r = this.view.getUint8(this.offset++);
                 const g = this.view.getUint8(this.offset++);
@@ -776,9 +783,7 @@ body {
                 colors[i] = `#${this.toHex(r)}${this.toHex(g)}${this.toHex(b)}`;
               }
             } else if (chunkId === "XYZI") {
-              console.log("Parsing XYZI Chunk...");
               const numVoxels = this.readInt();
-              console.log(`Number of Voxels: ${numVoxels}`);
               for (let i = 0; i < numVoxels; i++) {
                 const x = this.view.getUint8(this.offset++);
                 const y = this.view.getUint8(this.offset++);

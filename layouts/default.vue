@@ -504,7 +504,6 @@ export default {
       }
 
       try {
-        console.log(`File dropped: ${file.name}`);
         this.$set(this.$ctx, "loading", true);
 
         const arrayBuffer = await file.arrayBuffer();
@@ -820,7 +819,6 @@ export default {
             const childChunkSize = this.readInt();
 
             if (chunkId === "RGBA") {
-              console.log("Parsing RGBA Chunk...");
               for (let i = 0; i < 256; i++) {
                 const r = this.view.getUint8(this.offset++);
                 const g = this.view.getUint8(this.offset++);
@@ -829,7 +827,6 @@ export default {
                 colors[i] = `#${this.toHex(r)}${this.toHex(g)}${this.toHex(b)}`;
               }
             } else if (chunkId === "XYZI") {
-              console.log("Parsing XYZI Chunk...");
               const numVoxels = this.readInt();
               for (let i = 0; i < numVoxels; i++) {
                 const x = this.view.getUint8(this.offset++);
@@ -845,9 +842,6 @@ export default {
 
           // Fallback to the default palette if no RGBA chunk was found
           if (colors.every((c) => c === "#000000")) {
-            console.log(
-              "No RGBA chunk found, using default MagicaVoxel palette"
-            );
             colors = this.defaultPalette;
           }
 

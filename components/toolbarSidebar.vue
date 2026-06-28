@@ -308,7 +308,6 @@ export default {
         { value: "two", label: "two" },
         { value: "many", label: "many" },
       ],
-      adScriptLoaded: false,
       minimapFrame: null,
       lastCols: null,
       lastRows: null,
@@ -352,24 +351,6 @@ export default {
     },
   },
   mounted() {
-    if (
-      process.env.NODE_ENV === "production" &&
-      typeof window !== "undefined"
-    ) {
-      const script = document.createElement("script");
-      script.async = true;
-      script.type = "text/javascript";
-      script.src =
-        "//cdn.carbonads.com/carbon.js?serve=CW7IT5QY&placement=layoutitcom&format=responsive";
-      script.id = "_carbonads_js";
-
-      script.onload = () => {
-        this.adScriptLoaded = true;
-      };
-
-      this.$refs.carbonAds.appendChild(script);
-    }
-
     this.scheduleMinimapRender();
     this.lastCols = Number(this.$ctx.cols) || 32;
     this.lastRows = Number(this.$ctx.rows) || 32;
