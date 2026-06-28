@@ -2,6 +2,7 @@
   "name": "layoutit-terra",
   "version": "1.0.0",
   "private": true,
+  "license": "ISC",
   "scripts": {
     "dev": "nuxt",
     "build": "nuxt build",

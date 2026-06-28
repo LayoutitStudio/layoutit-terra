@@ -94,4 +94,4 @@ test output are intentionally ignored by Git.
 
 ## License
 
-No license file is currently included in this repository.
+ISC License. See [LICENSE](LICENSE).
