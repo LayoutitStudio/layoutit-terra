@@ -94,4 +94,4 @@ test output are intentionally ignored by Git.
 
 ## License
 
-ISC License. See [LICENSE](LICENSE).
+GPL-2.0-only. See [LICENSE](LICENSE).
